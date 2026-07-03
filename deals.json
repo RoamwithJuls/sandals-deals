@@ -1,0 +1,23 @@
+{
+  "lastUpdated": "7/2/2026 EST",
+  "deals": [
+    {
+      "resort": "Sandals Saint Vincent",
+      "roomName": "One-Bedroom Butler Villa Suite",
+      "roomCode": "VHP",
+      "link": "https://www.sandals.com/specials/suite-deals/"
+    },
+    {
+      "resort": "Sandals Royal Curaçao",
+      "roomName": "Sunchi Beachside Oceanview Butler Suite",
+      "roomCode": "B1",
+      "link": "https://www.sandals.com/specials/suite-deals/"
+    },
+    {
+      "resort": "Sandals Grande Antigua",
+      "roomName": "Mediterranean Honeymoon Club Level Suite",
+      "roomCode": "MO",
+      "link": "https://www.sandals.com/specials/suite-deals/"
+    }
+  ]
+}
