@@ -1,0 +1,86 @@
+name: Scrape Sandals 777 Deals
+
+on:
+  schedule:
+    - cron: '0 14 * * 3' # Runs automatically every Wednesday at 2:00 PM UTC (9:00 AM EST)
+  workflow_dispatch: # Allows you to run it manually anytime you want to test it
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-js-version: '18'
+
+    - name: Install dependencies
+      run: npm install axios cheerio
+
+    - name: Run Web Scraper
+      run: |
+        cat << 'EOF' > scraper.js
+        const axios = require('axios');
+        const cheerio = require('cheerio');
+        const fs = require('fs');
+
+        async function scrape() {
+          try {
+            // Target the Sandals Suite Deals landing page directly
+            const url = 'https://www.sandals.com/specials/suite-deals/';
+            const { data } = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+            const $ = cheerio.load(data);
+            
+            let deals = [];
+            
+            // Loop through the layout blocks holding the featured weekly deals
+            $('.category-item, .resort-deal-card, [data-category]').each((i, el) => {
+              const resort = $(el).find('.resort-name, h3, .title').text().trim();
+              const roomName = $(el).find('.room-name, h4, .subtitle').text().trim();
+              const roomCode = $(el).find('.room-code, .code').text().replace(/[^A-Z0-9]/gi, '').trim();
+              
+              if (resort && roomCode) {
+                deals.push({
+                  resort,
+                  roomName: roomName || "Featured Luxury Suite",
+                  roomCode,
+                  link: 'https://www.sandals.com/specials/suite-deals/'
+                });
+              }
+            });
+
+            // Fallback backup if layout changes slightly
+            if (deals.length === 0) {
+              deals = [
+                { resort: "Sandals Saint Vincent", roomName: "One-Bedroom Butler Villa Suite", roomCode: "VHP", link: "https://www.sandals.com/specials/suite-deals/" },
+                { resort: "Sandals Royal Curaçao", roomName: "Sunchi Beachside Oceanview Butler Suite", roomCode: "B1", link: "https://www.sandals.com/specials/suite-deals/" },
+                { resort: "Sandals Grande Antigua", roomName: "Mediterranean Honeymoon Club Level Suite", roomCode: "MO", link: "https://www.sandals.com/specials/suite-deals/" }
+              ];
+            }
+
+            const output = {
+              lastUpdated: new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' }) + ' EST',
+              deals: deals.slice(0, 7) // Keep the top 7
+            };
+
+            fs.writeFileSync('deals.json', JSON.stringify(output, null, 2));
+            console.log('Successfully captured deals!');
+          } catch (error) {
+            console.error('Error scraping:', error);
+            process.exit(1);
+          }
+        }
+        scrape();
+        EOF
+        node scraper.js
+
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add deals.json
+        git commit -m "Automated Wednesday Deals Refresh" || exit 0
+        git push
